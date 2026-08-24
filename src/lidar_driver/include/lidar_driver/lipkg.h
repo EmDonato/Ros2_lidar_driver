@@ -11,20 +11,23 @@
 #include "pointdata.h"
 #include "scan_data.h"
 
-#define ANGLE_TO_RADIAN(angle) ((angle)*3.14159 / 180.0)
+#define ANGLE_TO_RADIAN(angle) ((angle) * 3.14159 / 180.0)
 
-enum {
+enum
+{
   PKG_HEADER = 0x54,
   PKG_VER_LEN = 0x2C,
   POINT_PER_PACK = 12,
 };
 
-typedef struct __attribute__((packed)) {
+typedef struct __attribute__((packed))
+{
   uint16_t distance;
   uint8_t confidence;
 } LidarPointStructDef;
 
-typedef struct __attribute__((packed)) {
+typedef struct __attribute__((packed))
+{
   uint8_t header;
   uint8_t ver_len;
   uint16_t speed;
@@ -36,28 +39,28 @@ typedef struct __attribute__((packed)) {
 } LiDARFrameTypeDef;
 
 class LiPkg {
- public:
+public:
   LiPkg(std::string frame_id);
-  
+
   double GetSpeed(void);
-  uint16_t GetTimestamp(void) { return timestamp_; }
-  
-  bool IsPkgReady(void) { return is_pkg_ready_; }
-  bool IsFrameReady(void) { return is_frame_ready_; }
-  void ResetFrameReady(void) { is_frame_ready_ = false; }
-  
-  long GetErrorTimes(void) { return error_times_; }
-  
+  uint16_t GetTimestamp(void) {return timestamp_;}
+
+  bool IsPkgReady(void) {return is_pkg_ready_;}
+  bool IsFrameReady(void) {return is_frame_ready_;}
+  void ResetFrameReady(void) {is_frame_ready_ = false;}
+
+  long GetErrorTimes(void) {return error_times_;}
+
   bool AnalysisOne(uint8_t byte);
-  bool Parse(const uint8_t* data, long len);
+  bool Parse(const uint8_t * data, long len);
   bool AssemblePacket();
 
   // Custom LaserScan message.
-  LaserScan GetLaserScan() { return output; }
+  LaserScan GetLaserScan() {return output;}
 
- private:
+private:
   const int kPointFrequence = 4500;
-  const std::array<PointData, POINT_PER_PACK>& GetPkgData(void);
+  const std::array < PointData, POINT_PER_PACK > & GetPkgData(void);
 
   std::string frame_id_;
   uint16_t timestamp_;
@@ -65,15 +68,15 @@ class LiPkg {
   long error_times_;
 
   LiDARFrameTypeDef pkg;
-  std::array<PointData, POINT_PER_PACK> one_pkg_;
-  std::vector<PointData> frame_tmp_;
+  std::array < PointData, POINT_PER_PACK > one_pkg_;
+  std::vector < PointData > frame_tmp_;
 
   bool is_pkg_ready_;
   bool is_frame_ready_;
 
   LaserScan output;
 
-  void ToLaserscan(std::vector<PointData> src);
+  void ToLaserscan(std::vector < PointData > src);
 };
 
 #endif

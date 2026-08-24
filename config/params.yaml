@@ -1,0 +1,7 @@
+lidar_driver:
+  ros__parameters:
+    port: /dev/ttyUSB0
+    frame_id: laser_link
+    publish_period_ms: 100
+    masked_index_start: 114
+    masked_index_end: 122

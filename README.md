@@ -1,29 +1,78 @@
-# Drivers
+# LD06 LiDAR ROS 2 driver
 
-Reusable drivers for Raspberry Pi 5:
+This repository contains a ROS 2 Humble serial driver for the LDROBOT LD06
+2D LiDAR. The image builds the driver from source and starts it automatically.
+It has no RealSense, libcamera, or custom interface dependency.
 
-- `stm32_nucleo_f303re_driver`: serial driver, default `/dev/ttyACM0` at 115200 baud
-- `lidar_driver`: LD06 serial driver, default `/dev/ttyUSB0`
-- `module3_driver`: Raspberry Pi Camera Module 3 through libcamera and GStreamer
-- `realsense2_camera`: pinned upstream source declared in `upstream.repos`
+## Repository layout
 
-Build and open the container:
+- `src/lidar_driver`: ROS 2 package and executable.
+- `config/params.yaml`: default runtime parameters.
+- `Dockerfile`: single-stage source build.
+- `compose.yaml`: Raspberry Pi 5 runtime example.
+
+## Dependencies and device
+
+The ROS package depends on `rclcpp` and `sensor_msgs`; serial communication
+uses the Linux termios API and POSIX threads already provided by the base
+system. It does not require RealSense, libcamera, or custom interface packages.
+
+Runtime requires an LD06 serial device, `/dev/ttyUSB0` by default.
+
+## Build and run
+
+Run from this repository:
 
 ```bash
-docker compose -f drivers/compose.yaml build
-docker compose -f drivers/compose.yaml up -d
-docker compose -f drivers/compose.yaml exec drivers bash
+docker compose build
+docker compose up
 ```
 
-Example node commands:
+The default platform is `linux/arm64`. Build natively on an x86-64 development
+machine with:
 
 ```bash
-ros2 run stm32_nucleo_f303re_driver stm_driver --ros-args -p port:=/dev/ttyACM0
-ros2 run lidar_driver lidar_driver --ros-args -p port:=/dev/ttyUSB0
-ros2 run module3_driver module3
-ros2 launch realsense2_camera rs_launch.py
+ROBOT_PLATFORM=linux/amd64 docker compose build
 ```
 
-The hardware container has privileged access to `/dev` because libcamera, USB, and serial hardware can create multiple dynamic devices. Restrict the device mappings in the production robot's `compose.yaml` whenever possible.
+Set a different ROS domain when required:
 
-On `linux/arm64`, the Dockerfile builds `libpisp` and Raspberry Pi's `libcamera` fork, including the `libcamerasrc` GStreamer plugin. Ubuntu 22.04 does not distribute that plugin for arm64. The upstream references can be overridden with the `LIBPISP_REF` and `LIBCAMERA_REF` build arguments.
+```bash
+ROS_DOMAIN_ID=7 docker compose up
+```
+
+The container runs as a non-root `ros` user and Compose exposes the host device
+tree in privileged mode. The default serial device is `/dev/ttyUSB0`.
+
+## Parameters
+
+Defaults are stored in `config/params.yaml` and mounted read-only at runtime.
+
+| Parameter | Default | Description |
+| --- | --- | --- |
+| `port` | `/dev/ttyUSB0` | LD06 serial device. |
+| `frame_id` | `laser_link` | Frame assigned to published scans. |
+| `publish_period_ms` | `100` | Scan publication period in milliseconds. |
+| `masked_index_start` | `114` | First scan index hidden by the robot body. |
+| `masked_index_end` | `122` | Last scan index hidden by the robot body. |
+
+The mask represents the area where parts of the robot obstruct the LiDAR. Both
+mask parameters can be set to `-1` to disable it. Values beyond the available
+scan length are safely clamped or ignored.
+
+## ROS interfaces
+
+The node is named `/lidar_driver` and publishes:
+
+- `scan` (`sensor_msgs/msg/LaserScan`) with Sensor Data QoS.
+
+Ranges inside the configured mask are published as `NaN`. The default frame is
+`laser_link`. The driver does not create ROS services.
+
+## Troubleshooting
+
+- Confirm that the sensor exists with `ls -l /dev/ttyUSB0`.
+- Update `port` in `config/params.yaml` if the kernel assigns another path.
+- Verify that the container user can access the device group when the driver
+  reports that the serial port cannot be opened.
+- The LD06 serial implementation uses its required 230400 baud configuration.

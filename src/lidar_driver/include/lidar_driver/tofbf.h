@@ -2,7 +2,7 @@
  * @file tofbf.h
  * @author LDRobot (marketing1@ldrobot.com)
  * @brief  LiDAR near-range filtering algorithm
- *         This code is only applicable to LDROBOT LiDAR LD06 products 
+ *         This code is only applicable to LDROBOT LiDAR LD06 products
  * sold by Shenzhen LDROBOT Co., LTD
  * @version 0.1
  * @date 2021-10-28
@@ -29,7 +29,7 @@
 #include "lipkg.h"
 
 class Tofbf {
- private:
+private:
   const int kConfidenceLow = 15;  // Low confidence threshold
   const int kConfidenceSingle = 220;  // Discrete points require higher confidence
   const int kScanFrequency = 4500;  // Default scan frequency, to change, read
@@ -37,11 +37,11 @@ class Tofbf {
   double curr_speed_;
   Tofbf() = delete;
   Tofbf(const Tofbf &) = delete;
-  Tofbf &operator=(const Tofbf &) = delete;
+  Tofbf & operator = (const Tofbf &) = delete;
 
- public:
+public:
   Tofbf(int speed);
-  std::vector<PointData> NearFilter(const std::vector<PointData> &tmp) const;
+  std::vector < PointData > NearFilter(const std::vector < PointData > &tmp) const;
   ~Tofbf();
 };
 

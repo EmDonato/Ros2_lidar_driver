@@ -26,7 +26,8 @@
 #include <iostream>
 #include <vector>
 
-struct PointData {
+struct PointData
+{
   // Polar coordinate representation
   float angle;         // Angle ranges from 0 to 359 degrees
   uint16_t distance;   // Distance is measured in millimeters
@@ -34,23 +35,25 @@ struct PointData {
   // Cartesian coordinate representation
   double x;
   double y;
-  PointData(float angle, uint16_t distance, uint8_t confidence, double x = 0,
-            double y = 0) {
+  PointData(
+    float angle, uint16_t distance, uint8_t confidence, double x = 0,
+    double y = 0) {
     this->angle = angle;
     this->distance = distance;
     this->confidence = confidence;
     this->x = x;
     this->y = y;
   }
-  PointData() {}
-  friend std::ostream &operator<<(std::ostream &os, const PointData &data) {
-    os << data.angle << " " << data.distance << " " << (int)data.confidence
-       << " " << data.x << " " << data.y;
-    return os;
+  PointData() {
   }
+  friend std::ostream & operator << (std::ostream & os, const PointData & data) {
+    os << data.angle << " " << data.distance << " " << (int)data.confidence
+    << " " << data.x << " " << data.y;
+    return os;
+    }
 };
 
-typedef std::vector<PointData> Points2D;
+typedef std::vector < PointData > Points2D;
 
 #endif  // _POINT_DATA_H_
 

@@ -32,31 +32,32 @@
 #include <vector>
 
 class CmdInterfaceLinux {
- public:
+public:
   CmdInterfaceLinux();
   ~CmdInterfaceLinux();
-  // open serial port
-  bool Open(std::string &port_name);  
-  // close serial port
-  bool Close();     
-  // receive from port channel data                  
-  bool ReadFromIO(uint8_t *rx_buf, uint32_t rx_buf_len, uint32_t *rx_len); 
-  // transmit data to port channel
-  bool WriteToIo(const uint8_t *tx_buf, uint32_t tx_buf_len, uint32_t *tx_len);  
-  // set receive port channel data callback deal with fuction
-  void SetReadCallback(std::function<void(const char *, size_t length)> callback) {
+  // Open the serial port.
+  bool Open(const std::string & port_name);
+  // Close the serial port.
+  bool Close();
+  // Receive data from the serial channel.
+  bool ReadFromIO(uint8_t * rx_buf, uint32_t rx_buf_len, uint32_t * rx_len);
+  // Transmit data to the serial channel.
+  bool WriteToIo(const uint8_t * tx_buf, uint32_t tx_buf_len, uint32_t * tx_len);
+  // Set the receive callback.
+  void SetReadCallback(std::function < void(const char *, size_t length) > callback)
+  {
     read_callback_ = callback;
-  }  
-  // whether open
-  bool IsOpened() { return is_cmd_opened_.load(); };  
+  }
+  // Return whether the serial port is open.
+  bool IsOpened() {return is_cmd_opened_.load();}
 
- private:
-  std::thread *rx_thread_;
+private:
+  std::thread * rx_thread_;
   long long rx_count_;
   int32_t com_handle_;
-  std::atomic<bool> is_cmd_opened_, rx_thread_exit_flag_;
-  std::function<void(const char *, size_t length)> read_callback_;
-  static void RxThreadProc(void *param);
+  std::atomic < bool > is_cmd_opened_, rx_thread_exit_flag_;
+  std::function < void(const char *, size_t length) > read_callback_;
+  static void RxThreadProc(void * param);
 };
 
 #endif  //__LINUX_SERIAL_PORT_H__

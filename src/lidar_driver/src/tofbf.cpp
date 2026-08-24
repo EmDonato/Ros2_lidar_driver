@@ -2,8 +2,8 @@
  * @file tofbf.cpp
  * @author LDRobot (marketing1@ldrobot.com)
  * @brief  LiDAR near-range filtering algorithm
- *         This code is only applicable to LDROBOT LiDAR LD06 products 
- * sold by Shenzhen LDROBOT Co., LTD 
+ *         This code is only applicable to LDROBOT LiDAR LD06 products
+ * sold by Shenzhen LDROBOT Co., LTD
  * @version 0.1
  * @date 2021-10-28
  *
@@ -31,18 +31,19 @@
  * @param [in]
  *  @param speed  current lidar speed
  */
-Tofbf::Tofbf(int speed) { curr_speed_ = speed; }
+Tofbf::Tofbf(int speed) {curr_speed_ = speed;}
 
 Tofbf::~Tofbf() {}
 
 /**
  * @brief Filter within 5m to filter out unreasonable data points
  * @param [in]
- * 	@param tmp lidar point data
+ *      @param tmp lidar point data
  * @return std::vector<PointData>
  */
 std::vector<PointData> Tofbf::NearFilter(
-    const std::vector<PointData> &tmp) const {
+  const std::vector<PointData> & tmp) const
+{
   std::vector<PointData> normal, pending, item;
   std::vector<std::vector<PointData>> group;
 
@@ -55,21 +56,23 @@ std::vector<PointData> Tofbf::NearFilter(
     }
   }
 
-  if (tmp.empty()) return normal;
+  if (tmp.empty()) {return normal;}
 
   double angle_delta_up_limit = curr_speed_ / kScanFrequency * 2;
 
   // std::cout <<angle_delta_up_limit << std::endl; test code
 
   // sort
-  std::sort(pending.begin(), pending.end(),
-            [](PointData a, PointData b) { return a.angle < b.angle; });
+  std::sort(
+    pending.begin(), pending.end(),
+    [](PointData a, PointData b) {return a.angle < b.angle;});
 
   PointData last(-10, 0, 0);
   // group
   for (auto n : pending) {
     if (abs(n.angle - last.angle) > angle_delta_up_limit ||
-        abs(n.distance - last.distance) > last.distance * 0.03) {
+      abs(n.distance - last.distance) > last.distance * 0.03)
+    {
       if (item.empty() == false) {
         group.push_back(item);
         item.clear();
@@ -79,22 +82,24 @@ std::vector<PointData> Tofbf::NearFilter(
     last = n;
   }
   // push back last item
-  if (item.empty() == false) group.push_back(item);
+  if (item.empty() == false) {group.push_back(item);}
 
-  if (group.empty()) return normal;
+  if (group.empty()) {return normal;}
 
   // Connection 0 degree and 359 degree
   auto first_item = group.front().front();
   auto last_item = group.back().back();
   if (abs(first_item.angle + 360.f - last_item.angle) < angle_delta_up_limit &&
-      abs(first_item.distance - last_item.distance) < last.distance * 0.03) {
-    group.front().insert(group.front().begin(), group.back().begin(),
-                         group.back().end());
+    abs(first_item.distance - last_item.distance) < last.distance * 0.03)
+  {
+    group.front().insert(
+      group.front().begin(), group.back().begin(),
+      group.back().end());
     group.erase(group.end() - 1);
   }
   // selection
   for (auto n : group) {
-    if (n.size() == 0) continue;
+    if (n.size() == 0) {continue;}
     // No filtering if there are many points
     if (n.size() > 15) {
       normal.insert(normal.end(), n.begin(), n.end());
@@ -108,7 +113,7 @@ std::vector<PointData> Tofbf::NearFilter(
         c += m.confidence;
       }
       c /= n.size();
-      if (c < kConfidenceSingle) continue;
+      if (c < kConfidenceSingle) {continue;}
     }
 
     // Calculate the mean value of distance and confidence

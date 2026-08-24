@@ -32,13 +32,17 @@
 #define MAX_ACK_BUF_LEN 2304000
 
 CmdInterfaceLinux::CmdInterfaceLinux()
-    : rx_thread_(nullptr), rx_count_(0), read_callback_(nullptr) {
-  com_handle_ = -1;
-}
+: rx_thread_(nullptr),
+  rx_count_(0),
+  com_handle_(-1),
+  is_cmd_opened_(false),
+  rx_thread_exit_flag_(false),
+  read_callback_(nullptr) {}
 
-CmdInterfaceLinux::~CmdInterfaceLinux() { Close(); }
+CmdInterfaceLinux::~CmdInterfaceLinux() {Close();}
 
-bool CmdInterfaceLinux::Open(std::string &port_name) {
+bool CmdInterfaceLinux::Open(const std::string & port_name)
+{
   int flags = (O_RDWR | O_NOCTTY | O_NONBLOCK);
 
   com_handle_ = open(port_name.c_str(), flags);
@@ -58,10 +62,10 @@ bool CmdInterfaceLinux::Open(std::string &port_name) {
   options.c_cflag |= (tcflag_t)(CLOCAL | CREAD | CS8 | CRTSCTS);
   options.c_cflag &= (tcflag_t) ~(CSTOPB | PARENB | PARODD);
   options.c_lflag &= (tcflag_t) ~(ICANON | ECHO | ECHOE | ECHOK | ECHONL |
-                                  ISIG | IEXTEN);  //|ECHOPRT
+    ISIG | IEXTEN);                                //|ECHOPRT
   options.c_oflag &= (tcflag_t) ~(OPOST);
   options.c_iflag &=
-      (tcflag_t) ~(IXON | IXOFF | INLCR | IGNCR | ICRNL | IGNBRK);
+    (tcflag_t) ~(IXON | IXOFF | INLCR | IGNCR | ICRNL | IGNBRK);
 
   options.c_cc[VMIN] = 0;
   options.c_cc[VTIME] = 0;
@@ -84,7 +88,8 @@ bool CmdInterfaceLinux::Open(std::string &port_name) {
   return true;
 }
 
-bool CmdInterfaceLinux::Close() {
+bool CmdInterfaceLinux::Close()
+{
   if (is_cmd_opened_ == false) {
     return true;
   }
@@ -107,8 +112,10 @@ bool CmdInterfaceLinux::Close() {
   return true;
 }
 
-bool CmdInterfaceLinux::ReadFromIO(uint8_t *rx_buf, uint32_t rx_buf_len,
-                                   uint32_t *rx_len) {
+bool CmdInterfaceLinux::ReadFromIO(
+  uint8_t * rx_buf, uint32_t rx_buf_len,
+  uint32_t * rx_len)
+{
   static timespec timeout = {0, (long)(100 * 1e6)};
   int32_t len = -1;
 
@@ -136,8 +143,10 @@ bool CmdInterfaceLinux::ReadFromIO(uint8_t *rx_buf, uint32_t rx_buf_len,
   return len == -1 ? false : true;
 }
 
-bool CmdInterfaceLinux::WriteToIo(const uint8_t *tx_buf, uint32_t tx_buf_len,
-                                  uint32_t *tx_len) {
+bool CmdInterfaceLinux::WriteToIo(
+  const uint8_t * tx_buf, uint32_t tx_buf_len,
+  uint32_t * tx_len)
+{
   int32_t len = -1;
 
   if (IsOpened()) {
@@ -149,9 +158,10 @@ bool CmdInterfaceLinux::WriteToIo(const uint8_t *tx_buf, uint32_t tx_buf_len,
   return len == -1 ? false : true;
 }
 
-void CmdInterfaceLinux::RxThreadProc(void *param) {
-  CmdInterfaceLinux *cmd_if = (CmdInterfaceLinux *)param;
-  char *rx_buf = new char[MAX_ACK_BUF_LEN + 1];
+void CmdInterfaceLinux::RxThreadProc(void * param)
+{
+  CmdInterfaceLinux * cmd_if = (CmdInterfaceLinux *)param;
+  char * rx_buf = new char[MAX_ACK_BUF_LEN + 1];
   while (!cmd_if->rx_thread_exit_flag_.load()) {
     uint32_t readed = 0;
     bool res = cmd_if->ReadFromIO((uint8_t *)rx_buf, MAX_ACK_BUF_LEN, &readed);
