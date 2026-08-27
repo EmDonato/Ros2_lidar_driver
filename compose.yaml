@@ -1,7 +1,8 @@
 services:
   lidar_driver:
-    image: lidar-driver
+    image: open-pi-lidar-driver-img
     platform: ${ROBOT_PLATFORM:-linux/arm64}
+    container_name: open-pi-lidar-driver
     build:
       context: .
       dockerfile: Dockerfile
