@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <array>
+#include <cstddef>
 #include <iostream>
 #include <vector>
 #include <string>
@@ -40,7 +41,7 @@ typedef struct __attribute__((packed))
 
 class LiPkg {
 public:
-  LiPkg(std::string frame_id);
+  LiPkg(std::string frame_id, std::size_t scan_beams);
 
   double GetSpeed(void);
   uint16_t GetTimestamp(void) {return timestamp_;}
@@ -63,6 +64,7 @@ private:
   const std::array < PointData, POINT_PER_PACK > & GetPkgData(void);
 
   std::string frame_id_;
+  std::size_t scan_beams_;
   uint16_t timestamp_;
   double speed_;
   long error_times_;

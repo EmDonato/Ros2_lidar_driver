@@ -20,11 +20,12 @@ public:
     port_ = this->declare_parameter<std::string>("port", "/dev/ttyUSB0");
     frame_id_ = this->declare_parameter<std::string>("frame_id", "laser_link");
     publish_period_ms_ = this->declare_parameter<int>("publish_period_ms", 100);
+    scan_beams_ = this->declare_parameter<int>("scan_beams", 450);
     masked_index_start_ = this->declare_parameter<int>("masked_index_start", 114);
     masked_index_end_ = this->declare_parameter<int>("masked_index_end", 122);
 
     validate_parameters_();
-    lidar_ = std::make_unique<LiPkg>(frame_id_);
+    lidar_ = std::make_unique<LiPkg>(frame_id_, static_cast<size_t>(scan_beams_));
 
     serial_port_.SetReadCallback(
       [this](const char * data, size_t length) {
@@ -46,8 +47,8 @@ public:
 
     RCLCPP_INFO(
       this->get_logger(),
-      "LD06 driver started on %s with frame %s and a %d ms publish period",
-      port_.c_str(), frame_id_.c_str(), publish_period_ms_);
+      "LD06 driver started on %s with frame %s, %d scan beams, and a %d ms publish period",
+      port_.c_str(), frame_id_.c_str(), scan_beams_, publish_period_ms_);
   }
 
   ~LidarDriver() override
@@ -60,6 +61,7 @@ private:
   std::string port_;
   std::string frame_id_;
   int publish_period_ms_{100};
+  int scan_beams_{450};
   int masked_index_start_{114};
   int masked_index_end_{122};
 
@@ -73,6 +75,10 @@ private:
   {
     if (publish_period_ms_ <= 0) {
       throw std::invalid_argument("publish_period_ms must be greater than zero");
+    }
+
+    if (scan_beams_ < 2) {
+      throw std::invalid_argument("scan_beams must be at least 2");
     }
 
     const bool mask_disabled = masked_index_start_ == -1 && masked_index_end_ == -1;

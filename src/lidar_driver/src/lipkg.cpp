@@ -25,8 +25,15 @@
 #include <string.h>
 
 #include <algorithm>
+#include <cmath>
 #include <limits>
+#include <utility>
 #include "tofbf.h"
+
+namespace
+{
+constexpr double kTwoPi = 2.0 * 3.14159265358979323846;
+}  // namespace
 
 static const uint8_t CrcTable[256] = {
   0x00, 0x4d, 0x9a, 0xd7, 0x79, 0x34, 0xe3, 0xae, 0xf2, 0xbf, 0x68, 0x25,
@@ -62,14 +69,15 @@ uint8_t CalCRC8(const uint8_t * data, uint16_t data_len)
   return crc;
 }
 
-LiPkg::LiPkg(std::string frame_id)
-: timestamp_(0),
+LiPkg::LiPkg(std::string frame_id, std::size_t scan_beams)
+: frame_id_(std::move(frame_id)),
+  scan_beams_(scan_beams),
+  timestamp_(0),
   speed_(0),
   error_times_(0),
   is_pkg_ready_(false),
   is_frame_ready_(false)
 {
-  frame_id_ = frame_id;
 }
 
 double LiPkg::GetSpeed(void) {return speed_ / 360.0;}
@@ -210,15 +218,15 @@ const std::array<PointData, POINT_PER_PACK> & LiPkg::GetPkgData(void)
 
 void LiPkg::ToLaserscan(std::vector<PointData> src)
 {
-  float angle_min, angle_max, range_min, range_max, angle_increment;
-
-  angle_min = ANGLE_TO_RADIAN(src.front().angle);
-  angle_max = ANGLE_TO_RADIAN(src.back().angle);
-
-  range_min = 0.02;
-  range_max = 12;
-
-  angle_increment = ANGLE_TO_RADIAN(speed_ / 4500);
+  // Keep the scan geometry constant. Deriving it from the instantaneous motor
+  // speed or the first/last filtered point changes the number of ranges from
+  // one revolution to the next, which is not supported by SLAM Toolbox.
+  const std::size_t beam_size = scan_beams_;
+  const double angle_min = 0.0;
+  const double angle_increment = kTwoPi / static_cast<double>(beam_size);
+  const double angle_max = angle_min + angle_increment * static_cast<double>(beam_size - 1);
+  const double range_min = 0.02;
+  const double range_max = 12.0;
 
   static uint16_t last_ts = 0;
   uint16_t dt = 0;
@@ -231,9 +239,6 @@ void LiPkg::ToLaserscan(std::vector<PointData> src)
   }
 
   last_ts = ts;
-
-  const size_t beam_size = static_cast<size_t>(
-    ceil((angle_max - angle_min) / angle_increment));
 
   output.stamp = ts;
   output.frame_id = frame_id_;
@@ -250,27 +255,30 @@ void LiPkg::ToLaserscan(std::vector<PointData> src)
   output.ranges.assign(beam_size, std::numeric_limits<float>::quiet_NaN());
   output.intensities.assign(beam_size, 0);
 
-  int last_index = 0;
+  std::size_t last_index = 0;
+  bool have_last_index = false;
 
   for (auto & point : src) {
     float range = point.distance / 1000.f;
-    float angle = ANGLE_TO_RADIAN(point.angle);
+    double angle = ANGLE_TO_RADIAN(point.angle);
 
-    int index = (angle - output.angle_min) / output.angle_increment;
+    const auto index = static_cast<std::size_t>(
+      std::floor((angle - output.angle_min) / output.angle_increment));
 
-    if (index >= 0 && static_cast<size_t>(index) < beam_size) {
+    if (index < beam_size) {
       if (std::isnan(output.ranges[index]) || range < output.ranges[index]) {
         output.ranges[index] = range;
       }
 
       output.intensities[index] = point.confidence;
 
-      if (index - last_index == 2) {
+      if (have_last_index && index == last_index + 2) {
         output.ranges[index - 1] = range;
         output.intensities[index - 1] = point.confidence;
       }
 
       last_index = index;
+      have_last_index = true;
     }
   }
 }

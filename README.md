@@ -53,12 +53,19 @@ Defaults are stored in `config/params.yaml` and mounted read-only at runtime.
 | `port` | `/dev/ttyUSB0` | LD06 serial device. |
 | `frame_id` | `laser_link` | Frame assigned to published scans. |
 | `publish_period_ms` | `100` | Scan publication period in milliseconds. |
+| `scan_beams` | `450` | Fixed number of angular bins per scan for SLAM Toolbox compatibility. |
 | `masked_index_start` | `114` | First scan index hidden by the robot body. |
 | `masked_index_end` | `122` | Last scan index hidden by the robot body. |
 
 The mask represents the area where parts of the robot obstruct the LiDAR. Both
 mask parameters can be set to `-1` to disable it. Values beyond the available
 scan length are safely clamped or ignored.
+
+Every published scan contains exactly `scan_beams` ranges. The driver maps the
+filtered measurements onto a fixed 360-degree grid instead of deriving the
+array length from the motor speed, which naturally varies between revolutions.
+This also keeps `angle_min`, `angle_max`, and `angle_increment` consistent with
+the array length expected by SLAM Toolbox.
 
 ## ROS interfaces
 
