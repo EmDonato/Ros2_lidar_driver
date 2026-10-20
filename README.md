@@ -1,6 +1,6 @@
 # LD06 LiDAR ROS 2 driver
 
-This repository contains a ROS 2 Humble serial driver for the LDROBOT LD06
+This repository contains a ROS 2 Jazzy serial driver for the LDROBOT LD06
 2D LiDAR. The image builds the driver from source and starts it automatically.
 It has no RealSense, libcamera, or custom interface dependency.
 
